@@ -1,4 +1,4 @@
-### Project Structure
+ Project Structure
 
 express-assignment/
 │-- routes/
@@ -13,13 +13,7 @@ express-assignment/
 │-- package.json
 │-- README.md
 │-- .env
-```
 
----
-
-### 1. **`index.js`**
-
-This file sets up the Express server, imports middleware, routes, and starts the server.
 
 ```javascript
 const express = require('express');
