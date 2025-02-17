@@ -1,93 +1,251 @@
-**Week 2: Express.js Fundamentals Assignment**
+### Project Structure
 
-**Objective:**
+express-assignment/
+│-- routes/
+│    ├── userRoutes.js
+│    ├── productRoutes.js
+│-- middleware/
+│    ├── logger.js
+│-- controllers/
+│    ├── userController.js
+│    ├── productController.js
+│-- index.js
+│-- package.json
+│-- README.md
+│-- .env
+```
 
-- Apply Express.js concepts learned throughout the week.
-- Develop hands-on experience with creating routes, middleware, and API endpoints.
-- Understand and implement RESTful APIs.
+---
 
-**Instructions:**
+### 1. **`index.js`**
 
-1. **Setup Express.js Project:**
+This file sets up the Express server, imports middleware, routes, and starts the server.
 
-   - Install Node.js using NVM.
-   - Create a new project folder named `express-assignment`.
-   - Initialize a Node.js project using:
-     ```sh
-     npm init -y
-     ```
-   - Install necessary dependencies:
-     ```sh
-     npm install express dotenv
-     ```
+```javascript
+const express = require('express');
+const dotenv = require('dotenv');
+const userRoutes = require('./routes/userRoutes');
+const productRoutes = require('./routes/productRoutes');
+const logger = require('./middleware/logger');
 
-2. **Project Structure:**
+dotenv.config(); // Load environment variables
 
-   - Organize your project files with a clear folder structure:
-     ```
-     express-assignment/
-     │-- routes/
-     │    ├── userRoutes.js
-     │    ├── productRoutes.js
-     │-- middleware/
-     │    ├── logger.js
-     │-- controllers/
-     │    ├── userController.js
-     │    ├── productController.js
-     │-- index.js
-     │-- package.json
-     │-- README.md
-     │-- .env
-     ```
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-3. **Create Routes:**
+// Middleware to log request details
+app.use(logger);
 
-   - Create `userRoutes.js` and `productRoutes.js` inside the `routes/` folder.
-   - Implement RESTful routes for users and products (GET, POST, PUT, DELETE).
-   - Ensure proper usage of route parameters and query strings.
+// Middleware to parse JSON request bodies
+app.use(express.json());
 
-4. **Implement Middleware:**
+// Routes
+app.use('/api/users', userRoutes);
+app.use('/api/products', productRoutes);
 
-   - Create a custom middleware function in `middleware/logger.js` to log request details (method, URL, timestamp).
-   - Apply middleware globally to all routes.
+// Error Handling Middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send({ message: 'Something went wrong!' });
+});
 
-5. **Develop Controllers:**
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+```
 
-   - Create controller functions in `controllers/userController.js` and `controllers/productController.js`.
-   - Implement business logic to handle requests and responses.
+---
 
-6. **Environment Variables:**
+### 2. **`middleware/logger.js`**
 
-   - Use `dotenv` to manage environment variables.
-   - Define variables such as `PORT` in the `.env` file and access them inside the application.
+Custom middleware to log request details.
 
-7. **Error Handling:**
+```javascript
+function logger(req, res, next) {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+}
 
-   - Implement a global error-handling middleware to catch and respond to errors gracefully.
+module.exports = logger;
+```
 
-8. **Testing:**
+---
 
-   - Run the server using:
-     ```sh
-     node index.js
-     ```
-   - Test API endpoints using Postman or cURL.
-   - Verify routes, middleware functionality, and error handling.
+### 3. **`controllers/userController.js`**
 
-9. **Documentation:**
+Controller for handling user-related operations.
 
-   - Add a `README.md` with instructions on setting up and running the project.
-   - Document available API endpoints with descriptions and example requests.
+```javascript
+let users = [];
 
-10. **Submission:**
+exports.getUsers = (req, res) => {
+  res.json(users);
+};
 
-   - Push your code to your GitHub repository.
+exports.createUser = (req, res) => {
+  const { name, email } = req.body;
+  const newUser = { id: Date.now(), name, email };
+  users.push(newUser);
+  res.status(201).json(newUser);
+};
 
-**Evaluation Criteria:**
+exports.updateUser = (req, res) => {
+  const { id } = req.params;
+  const { name, email } = req.body;
+  let user = users.find(user => user.id == id);
 
-- Correct implementation of Express routes and middleware.
-- Proper error handling and logging.
-- Clean project structure and code organization.
-- Detailed documentation with clear instructions.
-- Successful testing of all endpoints.
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  user.name = name;
+  user.email = email;
+  res.json(user);
+};
+
+exports.deleteUser = (req, res) => {
+  const { id } = req.params;
+  users = users.filter(user => user.id != id);
+  res.status(204).send();
+};
+```
+
+---
+
+### 4. **`controllers/productController.js`**
+
+Controller for handling product-related operations.
+
+```javascript
+let products = [];
+
+exports.getProducts = (req, res) => {
+  res.json(products);
+};
+
+exports.createProduct = (req, res) => {
+  const { name, price } = req.body;
+  const newProduct = { id: Date.now(), name, price };
+  products.push(newProduct);
+  res.status(201).json(newProduct);
+};
+
+exports.updateProduct = (req, res) => {
+  const { id } = req.params;
+  const { name, price } = req.body;
+  let product = products.find(product => product.id == id);
+
+  if (!product) {
+    return res.status(404).json({ message: 'Product not found' });
+  }
+
+  product.name = name;
+  product.price = price;
+  res.json(product);
+};
+
+exports.deleteProduct = (req, res) => {
+  const { id } = req.params;
+  products = products.filter(product => product.id != id);
+  res.status(204).send();
+};
+```
+
+---
+
+### 5. **`routes/userRoutes.js`**
+
+User routes to handle user-related requests.
+
+```javascript
+const express = require('express');
+const userController = require('../controllers/userController');
+
+const router = express.Router();
+
+router.get('/', userController.getUsers);
+router.post('/', userController.createUser);
+router.put('/:id', userController.updateUser);
+router.delete('/:id', userController.deleteUser);
+
+module.exports = router;
+```
+
+---
+
+### 6. **`routes/productRoutes.js`**
+
+Product routes to handle product-related requests.
+
+```javascript
+const express = require('express');
+const productController = require('../controllers/productController');
+
+const router = express.Router();
+
+router.get('/', productController.getProducts);
+router.post('/', productController.createProduct);
+router.put('/:id', productController.updateProduct);
+router.delete('/:id', productController.deleteProduct);
+
+module.exports = router;
+```
+
+---
+
+### 7. **`.env`**
+
+Store environment variables here, like the server port.
+
+```env
+PORT=3000
+```
+
+---
+
+### 8. **`README.md`**
+
+Basic project setup and API documentation.
+
+```markdown
+# Express.js Assignment
+
+## Setup Instructions
+
+1. Clone this repository.
+2. Run `npm install` to install dependencies.
+3. Create a `.env` file with the following content:
+   ```
+   PORT=3000
+   ```
+4. Run the server:
+   ```
+   node index.js
+   ```
+
+## API Endpoints
+
+### Users
+- `GET /api/users`: Get all users.
+- `POST /api/users`: Create a new user.
+- `PUT /api/users/:id`: Update user by ID.
+- `DELETE /api/users/:id`: Delete user by ID.
+
+### Products
+- `GET /api/products`: Get all products.
+- `POST /api/products`: Create a new product.
+- `PUT /api/products/:id`: Update product by ID.
+- `DELETE /api/products/:id`: Delete product by ID.
+```
+
+---
+
+### 9. **Testing**
+
+Once your server is running, you can test the API using Postman or cURL. For example, to test the `GET /api/users` route:
+
+```bash
+curl http://localhost:3000/api/users
+```
 
